@@ -1,0 +1,4 @@
+// my comment
+use my_db
+db.myCollection.insertOne({name: "test"})
+

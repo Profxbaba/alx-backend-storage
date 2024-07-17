@@ -1,0 +1,10 @@
+// my comment
+
+// Connect to the specified database
+var db = new Mongo().getDB("my_db");
+
+// Delete documents where name is "Holberton school" from the collection "school"
+var deleteResult = db.school.deleteMany({ name: "Holberton school" });
+
+// Print the result
+printjson(deleteResult);

@@ -1,0 +1,3 @@
+// my comment
+printjsononeline(db.school.countDocuments({}));
+

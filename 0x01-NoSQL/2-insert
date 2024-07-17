@@ -1,0 +1,4 @@
+// my comment
+var result = db.school.insertOne({ name: "Holberton school" });
+print("WriteResult({ \\"nInserted\\" : " + result.insertedCount + " })");
+

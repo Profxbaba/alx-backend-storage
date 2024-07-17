@@ -1,0 +1,10 @@
+// my comment
+
+db = db.getSiblingDB('my_db');
+const collection = db.getCollection("school");
+
+const cursor = collection.find({ "name": { $regex: /^Holberton/i } });
+
+cursor.forEach(function(doc) {
+    printjson(doc);
+});

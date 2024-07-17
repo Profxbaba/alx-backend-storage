@@ -1,0 +1,3 @@
+// my comment
+db.school.find().limit(1).forEach(function(doc) { printjsononeline(doc); });
+
