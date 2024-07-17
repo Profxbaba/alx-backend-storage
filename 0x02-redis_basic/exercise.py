@@ -155,3 +155,38 @@ class Cache:
             Optional[int]: The retrieved integer or None if key does not exist.
         """
         return self.get(key, lambda d: int(d))
+
+
+def replay(method: Callable) -> None:
+    """
+    Display the history of calls of a particular function.
+
+    Args:
+        method (Callable): The function whose call history is to be displayed.
+    """
+    # Create keys for inputs and outputs
+    input_key = f"{method.__qualname__}:inputs"
+    output_key = f"{method.__qualname__}:outputs"
+
+    # Retrieve the list of inputs and outputs from Redis
+    inputs = method.__self__._redis.lrange(input_key, 0, -1)
+    outputs = method.__self__._redis.lrange(output_key, 0, -1)
+
+    # Display the history of calls
+    print(f"{method.__qualname__} was called {len(inputs)} times:")
+    for inp, out in zip(inputs, outputs):
+        print(f"{method.__qualname__}(*{inp.decode('utf-8')}) -> "
+              f"{out.decode('utf-8')}")
+
+
+if __name__ == "__main__":
+    cache = Cache()
+
+    s1 = cache.store("foo")
+    print(s1)
+    s2 = cache.store("bar")
+    print(s2)
+    s3 = cache.store(42)
+    print(s3)
+
+    replay(cache.store)
