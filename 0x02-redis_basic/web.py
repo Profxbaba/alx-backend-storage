@@ -10,7 +10,7 @@ from functools import wraps
 from typing import Callable
 
 
-def cache_with_expiration(expiration: int):
+def cache_with_expiration(expiration: int) -> Callable:
     """
     Decorator to cache the result of a function with an expiration time.
 
@@ -35,19 +35,24 @@ def cache_with_expiration(expiration: int):
             cache_key = f"cached:{url}"
             count_key = f"count:{url}"
 
-            # Increment the access count for the URL
-            redis_client.incr(count_key)
+            try:
+                # Increment the access count for the URL
+                redis_client.incr(count_key)
 
-            # Check if the content is already cached
-            cached_content = redis_client.get(cache_key)
-            if cached_content:
-                return cached_content.decode('utf-8')
+                # Check if the content is already cached
+                cached_content = redis_client.get(cache_key)
+                if cached_content:
+                    return cached_content.decode('utf-8')
 
-            # Retrieve and cache the content if not already cached
-            content = method(url)
-            redis_client.setex(cache_key, expiration, content)
+                # Retrieve and cache the content if not already cached
+                content = method(url)
+                redis_client.setex(cache_key, expiration, content)
 
-            return content
+                return content
+
+            except (requests.RequestException, redis.RedisError) as e:
+                print(f"Error accessing URL or Redis: {e}")
+                return ""
 
         return wrapper
 
@@ -65,8 +70,12 @@ def get_page(url: str) -> str:
     Returns:
         str: The HTML content of the URL.
     """
-    response = requests.get(url)
-    return response.text
+    try:
+        response = requests.get(url)
+        return response.text
+    except requests.RequestException as e:
+        print(f"Request Exception: {e}")
+        return ""
 
 
 # Initialize a Redis client
