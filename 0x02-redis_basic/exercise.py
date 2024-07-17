@@ -1,13 +1,54 @@
 #!/usr/bin/env python3
 """
 This module provides a Cache class for storing and retrieving data
-in a Redis database with method call counting functionality.
+in a Redis database with method call history tracking.
 """
 
 import redis
 import uuid
 from typing import Union, Callable, Optional
 from functools import wraps
+
+
+def call_history(method: Callable) -> Callable:
+    """
+    Decorator to store the history of inputs and outputs for a function.
+
+    Args:
+        method (Callable): The function to be decorated.
+
+    Returns:
+        Callable: The decorated function with input/output history tracking.
+    """
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        """
+        Wrapper function to store inputs and outputs in Redis.
+
+        Args:
+            self: The instance of the class.
+            *args: Positional arguments for the function.
+            **kwargs: Keyword arguments for the function.
+
+        Returns:
+            The result of the original function call.
+        """
+        # Create keys for storing inputs and outputs
+        input_key = f"{method.__qualname__}:inputs"
+        output_key = f"{method.__qualname__}:outputs"
+
+        # Store the input arguments as a string
+        self._redis.rpush(input_key, str(args))
+
+        # Execute the original function
+        result = method(self, *args, **kwargs)
+
+        # Store the output
+        self._redis.rpush(output_key, str(result))
+
+        return result
+
+    return wrapper
 
 
 def count_calls(method: Callable) -> Callable:
@@ -54,6 +95,7 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
+    @call_history
     @count_calls
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """
@@ -113,15 +155,3 @@ class Cache:
             Optional[int]: The retrieved integer or None if key does not exist.
         """
         return self.get(key, lambda d: int(d))
-
-
-if __name__ == "__main__":
-    cache = Cache()
-
-    cache.store(b"first")
-    print(cache.get(cache.store.__qualname__, lambda x: x))
-
-    cache.store(b"second")
-    cache.store(b"third")
-    print(cache.get(cache.store.__qualname__, lambda x: x))
-
