@@ -119,9 +119,9 @@ if __name__ == "__main__":
     cache = Cache()
 
     cache.store(b"first")
-    print(cache.get(cache.store.__qualname__, lambda x: x.decode('utf-8')))
+    print(cache.get(cache.store.__qualname__, lambda x: x))
 
     cache.store(b"second")
     cache.store(b"third")
-    print(cache.get(cache.store.__qualname__, lambda x: x.decode('utf-8')))
+    print(cache.get(cache.store.__qualname__, lambda x: x))
 
