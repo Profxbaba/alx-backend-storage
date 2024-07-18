@@ -3,12 +3,14 @@
 import requests
 import redis
 from functools import wraps
-from typing import Callable, Any
+from typing import Callable
 
 redis_client = redis.Redis(host='localhost', port=6379, db=0)
 
 
-def cache_result(ttl: int = 10) -> Callable[[Callable[[str], str]], Callable[[str], str]]:
+def cache_result(
+    ttl: int = 10
+) -> Callable[[Callable[[str], str]], Callable[[str], str]]:
     """
     A decorator to cache the result of a function with a given TTL.
 
@@ -18,7 +20,9 @@ def cache_result(ttl: int = 10) -> Callable[[Callable[[str], str]], Callable[[st
     Returns:
         A decorator function.
     """
-    def decorator(func: Callable[[str], str]) -> Callable[[str], str]:
+    def decorator(
+        func: Callable[[str], str]
+    ) -> Callable[[str], str]:
         """
         A decorator function to cache the result of a function.
 
@@ -48,7 +52,9 @@ def cache_result(ttl: int = 10) -> Callable[[Callable[[str], str]], Callable[[st
                 redis_client.setex(cache_key, ttl, result)
                 redis_client.incr(count_key)
                 return result
+
         return wrapper
+
     return decorator
 
 
