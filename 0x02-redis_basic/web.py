@@ -14,17 +14,21 @@ def cache_result(method: Callable) -> Callable:
         cache_key = f"count:{url}"
 
         # Increment the access count for the URL
-        cache.incr(cache_key)
+        access_count = cache.incr(cache_key)
+        print(f"URL {url} has been accessed {access_count} times.")
 
         # Attempt to retrieve the cached content
         cached_content = cache.get(url)
         if cached_content:
+            print(f"Cache hit for {url}.")
             return cached_content.decode('utf-8')
 
         # Fetch the content and cache it with an expiration time of 10 seconds
+        print(f"Cache miss for {url}. Fetching content.")
         response = method(url)
         cache.setex(url, 10, response)
         return response
+
     return wrapper
 
 
