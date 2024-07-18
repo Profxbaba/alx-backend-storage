@@ -1,14 +1,17 @@
 // my comment
 
-// Connect to the database specified in the command line argument
-var db = new Mongo().getDB("my_db");
+// Connect to the database
+var db = connect("127.0.0.1:27017/" + db.getMongo().getDBs().databases.find(d => d.name === "my_db").name);
 
-// Perform the update operation on the documents with name "Holberton school"
+// Perform the update
 var result = db.school.updateMany(
-    { "name": "Holberton school" },  // Match criteria
-    { $set: { "address": "972 Mission street" } }  // Update to perform
+    { "name": "Holberton school" },  // Query to match documents
+    { $set: { "address": "972 Mission street" } }  // Update operation
 );
 
-// Format the result similar to older MongoDB versions for compatibility
-print("WriteResult({ \"nMatched\" : " + result.matchedCount + 
-      ", \"nUpserted\" : 0, \"nModified\" : " + result.modifiedCount + " })");
+// Print the result using the expected format
+printjson({
+    nMatched: result.matchedCount,
+    nUpserted: 0,
+    nModified: result.modifiedCount
+});
