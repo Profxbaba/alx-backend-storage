@@ -10,4 +10,8 @@ var result = db.school.updateMany(
 );
 
 // Print the result of the update operation
-printjson(result);
+printjson({
+    "nMatched": result.matchedCount,
+    "nUpserted": 0,  // No upsert in this operation
+    "nModified": result.modifiedCount
+});
