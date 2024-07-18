@@ -1,73 +1,39 @@
 #!/usr/bin/env python3
+"""This module provides a function to fetch and cache web pages."""
 
 import requests
 import redis
-from functools import wraps
 from typing import Callable
 
-redis_client = redis.Redis(host='localhost', port=6379, db=0)
+
+def cache_result(method: Callable) -> Callable:
+    """Decorator to cache the result of a function in Redis."""
+    def wrapper(url: str) -> str:
+        """Fetches and caches the content of a web page."""
+        cache = redis.Redis()
+        cache_key = f"count:{url}"
+
+        # Increment the access count for the URL
+        access_count = cache.incr(cache_key)
+        print(f"URL {url} has been accessed {access_count} times.")
+
+        # Attempt to retrieve the cached content
+        cached_content = cache.get(url)
+        if cached_content:
+            print(f"Cache hit for {url}.")
+            return cached_content.decode('utf-8')
+
+        # Fetch the content and cache it with an expiration time of 10 seconds
+        print(f"Cache miss for {url}. Fetching content.")
+        response = method(url)
+        cache.setex(url, 10, response)
+        return response
+
+    return wrapper
 
 
-def cache_result(
-    ttl: int = 10
-) -> Callable[[Callable[[str], str]], Callable[[str], str]]:
-    """
-    A decorator to cache the result of a function with a given TTL.
-
-    Args:
-        ttl (int): The time to live in seconds.
-
-    Returns:
-        A decorator function.
-    """
-    def decorator(
-        func: Callable[[str], str]
-    ) -> Callable[[str], str]:
-        """
-        A decorator function to cache the result of a function.
-
-        Args:
-            func (Callable[[str], str]): The function to be decorated.
-
-        Returns:
-            A decorated function.
-        """
-        @wraps(func)
-        def wrapper(url: str) -> str:
-            """
-            A wrapper function to cache the result of a function.
-
-            Args:
-                url (str): The URL to fetch.
-
-            Returns:
-                str: The HTML content of the URL.
-            """
-            cache_key = f"cache:{url}"
-            count_key = f"count:{url}"
-            if redis_client.exists(cache_key):
-                return redis_client.get(cache_key).decode('utf-8')
-            else:
-                result = func(url)
-                redis_client.setex(cache_key, ttl, result)
-                redis_client.incr(count_key)
-                return result
-
-        return wrapper
-
-    return decorator
-
-
-@cache_result(ttl=10)
+@cache_result
 def get_page(url: str) -> str:
-    """
-    Fetch the HTML content of a URL.
-
-    Args:
-        url (str): The URL to fetch.
-
-    Returns:
-        str: The HTML content of the URL.
-    """
+    """Retrieve the HTML content of a URL."""
     response = requests.get(url)
     return response.text
