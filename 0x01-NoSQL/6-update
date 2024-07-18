@@ -1,6 +1,13 @@
 // my comment
-db.school.updateMany(
-    { name: "Holberton school" },
-    { $set: { address: "972 Mission street" } }
+
+// Connect to the database specified in the command line argument
+var db = new Mongo().getDB("my_db");
+
+// Update the document with the name "Holberton school"
+var result = db.school.updateMany(
+    { "name": "Holberton school" },  // Query to match documents
+    { $set: { "address": "972 Mission street" } }  // Update operation
 );
 
+// Print the result of the update operation
+printjson(result);
