@@ -1,62 +1,67 @@
 #!/usr/bin/env python3
-"""
-This module provides a function to fetch and cache web pages.
-"""
 
 import requests
 import redis
-from typing import Callable
+from functools import wraps
+from typing import Callable, Any
+
+redis_client = redis.Redis(host='localhost', port=6379, db=0)
 
 
-def count_calls(method: Callable) -> Callable:
-    """Decorator to count how many times a function is called."""
-    def wrapper(url: str) -> str:
-        """Increment the count for each call."""
-        cache = redis.Redis()
-        cache_key_count = f"count:{url}"
-        access_count = cache.incr(cache_key_count)
-        print(f"URL {url} has been accessed {access_count} times.")
-        return method(url)
+def cache_result(ttl: int = 10) -> Callable[[Callable[[str], str]], Callable[[str], str]]:
+    """
+    A decorator to cache the result of a function with a given TTL.
 
-    return wrapper
+    Args:
+        ttl (int): The time to live in seconds.
+
+    Returns:
+        A decorator function.
+    """
+    def decorator(func: Callable[[str], str]) -> Callable[[str], str]:
+        """
+        A decorator function to cache the result of a function.
+
+        Args:
+            func (Callable[[str], str]): The function to be decorated.
+
+        Returns:
+            A decorated function.
+        """
+        @wraps(func)
+        def wrapper(url: str) -> str:
+            """
+            A wrapper function to cache the result of a function.
+
+            Args:
+                url (str): The URL to fetch.
+
+            Returns:
+                str: The HTML content of the URL.
+            """
+            cache_key = f"cache:{url}"
+            count_key = f"count:{url}"
+            if redis_client.exists(cache_key):
+                return redis_client.get(cache_key).decode('utf-8')
+            else:
+                result = func(url)
+                redis_client.setex(cache_key, ttl, result)
+                redis_client.incr(count_key)
+                return result
+        return wrapper
+    return decorator
 
 
-def cache_result(method: Callable) -> Callable:
-    """Decorator to cache the result of a function in Redis."""
-    def wrapper(url: str) -> str:
-        """Fetches and caches the content of a web page."""
-        cache = redis.Redis()
-        cache_key_content = f"content:{url}"
-
-        # Attempt to retrieve the cached content
-        cached_content = cache.get(cache_key_content)
-        if cached_content:
-            print(f"Cache hit for {url}.")
-            return cached_content.decode('utf-8')
-
-        # Fetch the content and cache it with an expiration time of 10 seconds
-        print(f"Cache miss for {url}. Fetching content.")
-        response = method(url)
-        cache.setex(cache_key_content, 10, response)
-        return response
-
-    return wrapper
-
-
-@count_calls
-@cache_result
+@cache_result(ttl=10)
 def get_page(url: str) -> str:
-    """Retrieve the HTML content of a URL."""
+    """
+    Fetch the HTML content of a URL.
+
+    Args:
+        url (str): The URL to fetch.
+
+    Returns:
+        str: The HTML content of the URL.
+    """
     response = requests.get(url)
-    response.raise_for_status()  # Raise an exception for HTTP errors
     return response.text
-
-
-if __name__ == "__main__":
-    # Example usage
-    test_url = (
-        "http://slowwly.robertomurray.co.uk/delay/3000/url/"
-        "https://example.com"
-    )
-    print(get_page(test_url))
-    print(get_page(test_url))  # Should use cached version if within 10 seconds
