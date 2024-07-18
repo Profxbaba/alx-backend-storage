@@ -54,6 +54,9 @@ def get_page(url: str) -> str:
 
 if __name__ == "__main__":
     # Example usage
-    test_url = "http://slowwly.robertomurray.co.uk/delay/3000/url/https://example.com"
+    test_url = (
+        "http://slowwly.robertomurray.co.uk/delay/3000/url/"
+        "https://example.com"
+    )
     print(get_page(test_url))
     print(get_page(test_url))  # Should use cached version if within 10 seconds
